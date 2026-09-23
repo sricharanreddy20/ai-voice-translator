@@ -1,80 +1,81 @@
 # AI Voice Translator
 
-A real-time, multilingual voice translation agent built with LiveKit Agents. This project creates a conversational AI capable of translating speech between English and Hindi/Telugu with ultra-low latency.
+A real-time English ↔ Hindi voice translation agent built with LiveKit Agents. Speak in Hindi and hear English, or speak in English and hear Hindi, in a live voice session.
+
+This is a prototype exploring the core pipeline for a multilingual voice translator.
+
+## How It Works
+
+```
+Microphone → LiveKit (WebRTC) → Deepgram STT → Groq LLM (translation) → ElevenLabs TTS → Speaker
+```
+
+1. The agent joins a LiveKit room and subscribes to the user's microphone track.
+2. Audio frames are streamed to Deepgram Nova-2 for speech-to-text.
+3. Each final transcript is sent to Llama 3.3 70B on Groq, prompted strictly as a translator. The model infers the translation direction from the input language.
+4. The translation is synthesized with ElevenLabs and streamed back into the room as audio.
+
+Audio intake and transcript processing run as concurrent asyncio loops.
 
 ## Tech Stack
 
-This project leverages the fastest available models for a seamless conversational experience:
-
-* Framework: LiveKit Agents
-* Speech-to-Text (STT): Deepgram (Nova-2 model)
-* Translation Engine (LLM): Groq (Llama 3-70b/8b)
-* Text-to-Speech (TTS): ElevenLabs (Multilingual v2)
-
-## Features
-
-* Real-time Processing: Streaming audio pipeline for near-instant translation.
-* Bi-directional Translation: Automatically detects language and translates:
-    * English to Hindi/Telugu
-    * Hindi/Telugu to English
-* Dockerized: Ready for deployment using Docker.
-* Context Aware: The LLM is system-prompted strictly as a translator, not a chatbot.
+- **Framework:** LiveKit Agents (Python)
+- **Speech-to-Text:** Deepgram Nova-2
+- **Translation:** Llama 3.3 70B via Groq
+- **Text-to-Speech:** ElevenLabs
+- **Deployment:** Docker
 
 ## Prerequisites
 
-* Python 3.11+
-* Docker (optional, for containerized deployment)
-* A LiveKit Cloud project (WebSocket URL, API Key, Secret)
-* API Keys for:
-    * Deepgram
-    * Groq
-    * ElevenLabs
+- Python 3.11+
+- Docker (optional)
+- A LiveKit Cloud project (URL, API key, API secret)
+- API keys for Deepgram, Groq, and ElevenLabs
 
-## Configuration
+## Setup
 
 1. Clone the repository:
-   git clone https://github.com/yourusername/voice-translator.git
-   cd voice-translator
+```bash
+   git clone https://github.com/sricharanreddy20/ai-voice-translator.git
+   cd ai-voice-translator
+```
 
-2. Create a .env file in the root directory and add your keys:
-   LIVEKIT_URL=wss://your-project.livekit.cloud
-   LIVEKIT_API_KEY=your_api_key
-   LIVEKIT_API_SECRET=your_api_secret
-   DEEPGRAM_API_KEY=your_deepgram_key
-   ELEVENLABS_API_KEY=your_elevenlabs_key
-   GROQ_API_KEY=your_groq_key
+2. Copy `.env.example` to `.env` and fill in your keys:
+```bash
+   cp .env.example .env
+```
 
-## Local Development
-
-1. Create a virtual environment:
+3. Create a virtual environment and install dependencies:
+```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows use venv\Scripts\activate
-
-2. Install dependencies:
+   source venv/bin/activate   # Windows: venv\Scripts\activate
    pip install -r requirements.txt
+```
 
-3. Run the agent in development mode:
+4. Run the agent:
+```bash
    python polyglot.py dev
+```
 
-## Docker Deployment
+## Run with Docker
 
-To build and run the agent as a container:
+```bash
+docker build -t voice-translator .
+docker run --env-file .env voice-translator
+```
 
-1. Build the image:
-   docker build -t voice-translator .
+## Testing
 
-2. Run the container:
-   docker run --env-file .env voice-translator
+1. Start the agent.
+2. Open the [LiveKit Agents Playground](https://agents-playground.livekit.io/).
+3. Connect using the same LiveKit URL, API key, and secret from your `.env`.
+4. The agent joins and greets you. Speak in Hindi or English to hear the translation.
 
-## How to Test
+## Limitations and Next Steps
 
-Since this is a backend agent, you need a frontend client to connect to the LiveKit room and send audio.
-
-1. Run the agent locally (python polyglot.py dev).
-2. Open the LiveKit Agents Playground (https://agents-playground.livekit.io/).
-3. Enter your LIVEKIT_URL, API_KEY, and SECRET (the same ones used in your .env).
-4. Connect to the room. The agent should join automatically and greet you.
-5. Speak in English, and it will respond in Hindi (or vice versa).
+- Supports English and Hindi only; the speech-to-text model is configured for Hindi.
+- The LLM response is fully generated before speech synthesis begins. Streaming it to TTS sentence by sentence would reduce response time.
+- Planned: explicit language detection and a multilingual STT model to support more languages, such as Telugu.
 
 ## License
 
